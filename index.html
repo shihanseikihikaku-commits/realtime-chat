@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>リアルタイム翻訳チャット</title>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== セットアップ画面 ===== */
+    #setup-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100dvh;
+      padding: 24px;
+      gap: 16px;
+    }
+
+    #setup-screen h1 {
+      font-size: 1.4rem;
+      color: #1a1a2e;
+      text-align: center;
+    }
+
+    #setup-screen p {
+      color: #666;
+      font-size: 0.9rem;
+      text-align: center;
+      max-width: 320px;
+    }
+
+    .input-group {
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .input-group label {
+      font-size: 0.85rem;
+      color: #444;
+      font-weight: 600;
+    }
+
+    .input-group input {
+      padding: 12px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-group input:focus {
+      border-color: #4f46e5;
+    }
+
+    .btn {
+      width: 100%;
+      max-width: 360px;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn:active { opacity: 0.8; }
+
+    .btn-primary {
+      background: #4f46e5;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #4f46e5;
+      border: 1.5px solid #4f46e5;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 360px;
+      color: #aaa;
+      font-size: 0.85rem;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #ddd;
+    }
+
+    /* ===== チャット画面 ===== */
+    #chat-screen {
+      display: none;
+      flex-direction: column;
+      height: 100dvh;
+    }
+
+    #chat-header {
+      background: #4f46e5;
+      color: white;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    #chat-header .title {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    #status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #f87171;
+      transition: background 0.3s;
+    }
+
+    #status-dot.connected { background: #4ade80; }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-width: 80%;
+    }
+
+    .message-group.self {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .message-group.other {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .message-group.self .bubble {
+      background: #4f46e5;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message-group.other .bubble {
+      background: white;
+      color: #1a1a2e;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .translation {
+      font-size: 0.82rem;
+      padding: 4px 10px;
+      border-radius: 10px;
+    }
+
+    .message-group.self .translation {
+      color: rgba(255,255,255,0.75);
+      background: rgba(79,70,229,0.3);
+    }
+
+    .message-group.other .translation {
+      color: #888;
+      background: #f5f5f5;
+    }
+
+    /* タイピング中インジケーター */
+    #typing-indicator {
+      padding: 0 16px 8px;
+      font-size: 0.82rem;
+      color: #aaa;
+      min-height: 24px;
+      flex-shrink: 0;
+    }
+
+    #remote-typing-preview {
+      background: white;
+      border-radius: 18px;
+      border-bottom-left-radius: 4px;
+      padding: 8px 14px;
+      font-size: 0.95rem;
+      color: #555;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      max-width: 80%;
+      word-break: break-word;
+      display: none;
+    }
+
+    /* 入力エリア */
+    #input-area {
+      background: white;
+      border-top: 1px solid #eee;
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+
+    #message-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 22px;
+      font-size: 0.95rem;
+      outline: none;
+      resize: none;
+      max-height: 120px;
+      line-height: 1.4;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    #message-input:focus { border-color: #4f46e5; }
+
+    #send-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #4f46e5;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: opacity 0.2s;
+    }
+
+    #send-btn:active { opacity: 0.8; }
+
+    #send-btn svg { width: 18px; height: 18px; fill: white; }
+
+    /* シェアURL */
+    #share-bar {
+      background: #eef2ff;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      font-size: 0.82rem;
+      color: #4f46e5;
+      border-bottom: 1px solid #ddd;
+    }
+
+    #share-url {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.78rem;
+      color: #666;
+    }
+
+    #copy-btn {
+      padding: 4px 10px;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* エラー表示 */
+    .error-msg {
+      color: #ef4444;
+      font-size: 0.82rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== セットアップ画面 ===== -->
+<div id="setup-screen">
+  <h1>🌐 リアルタイム翻訳チャット</h1>
+  <p>日本語 ↔ 英語をリアルタイムで翻訳しながらチャットできます</p>
+
+  <div class="input-group">
+    <label>Claude APIキー</label>
+    <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off">
+  </div>
+
+  <div class="input-group">
+    <label>あなたの名前</label>
+    <input type="text" id="name-input" placeholder="例：田中" maxlength="20">
+  </div>
+
+  <button class="btn btn-primary" id="start-btn">ルームを作成して招待する</button>
+
+  <div class="divider">または</div>
+
+  <button class="btn btn-secondary" id="join-btn">招待URLで参加する</button>
+
+  <p id="setup-error" class="error-msg"></p>
+</div>
+
+<!-- ===== チャット画面 ===== -->
+<div id="chat-screen">
+  <div id="chat-header">
+    <span class="title">🌐 翻訳チャット</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="status-text" style="font-size:0.8rem;opacity:0.9">接続待ち...</span>
+      <div id="status-dot"></div>
+    </div>
+  </div>
+
+  <div id="share-bar" style="display:none">
+    <span>招待URL：</span>
+    <span id="share-url"></span>
+    <button id="copy-btn">コピー</button>
+  </div>
+
+  <div id="messages"></div>
+
+  <div id="typing-indicator">
+    <div id="remote-typing-preview"></div>
+  </div>
+
+  <div id="input-area">
+    <textarea id="message-input" placeholder="メッセージを入力..." rows="1"></textarea>
+    <button id="send-btn">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+// ===== 設定 =====
+const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
+const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+
+// ===== 状態 =====
+let peer = null;
+let conn = null;
+let myName = '';
+let apiKey = '';
+let isHost = false;
+let typingTimer = null;
+
+// ===== DOM =====
+const setupScreen = document.getElementById('setup-screen');
+const chatScreen = document.getElementById('chat-screen');
+const apiKeyInput = document.getElementById('api-key-input');
+const nameInput = document.getElementById('name-input');
+const startBtn = document.getElementById('start-btn');
+const joinBtn = document.getElementById('join-btn');
+const setupError = document.getElementById('setup-error');
+const messages = document.getElementById('messages');
+const messageInput = document.getElementById('message-input');
+const sendBtn = document.getElementById('send-btn');
+const statusDot = document.getElementById('status-dot');
+const statusText = document.getElementById('status-text');
+const shareBar = document.getElementById('share-bar');
+const shareUrl = document.getElementById('share-url');
+const copyBtn = document.getElementById('copy-btn');
+const remoteTypingPreview = document.getElementById('remote-typing-preview');
+
+// ===== 初期化：URLパラメータを確認 =====
+const urlParams = new URLSearchParams(window.location.search);
+const hostPeerId = urlParams.get('room');
+
+// 保存されたAPIキーと名前を復元
+apiKeyInput.value = localStorage.getItem('chat_api_key') || '';
+nameInput.value = localStorage.getItem('chat_name') || '';
+
+if (hostPeerId) {
+  // 招待URLから来た場合は参加ボタンをハイライト
+  joinBtn.textContent = '参加する';
+  joinBtn.style.background = '#4f46e5';
+  joinBtn.style.color = 'white';
+  startBtn.style.display = 'none';
+  document.querySelector('#setup-screen p').textContent = '招待URLを受け取りました。名前とAPIキーを入力して参加してください。';
+}
+
+// ===== セットアップ =====
+startBtn.addEventListener('click', () => {
+  if (!validate()) return;
+  isHost = true;
+  initPeer(null);
+});
+
+joinBtn.addEventListener('click', () => {
+  if (!validate()) return;
+  isHost = false;
+  if (hostPeerId) {
+    initPeer(hostPeerId);
+  } else {
+    // URLなしで参加ボタンを押した場合
+    const roomId = prompt('招待URLのroom=以降のIDを入力してください：');
+    if (roomId) initPeer(roomId);
+  }
+});
+
+function validate() {
+  const key = apiKeyInput.value.trim();
+  const name = nameInput.value.trim();
+  if (!key) { showError('APIキーを入力してください'); return false; }
+  if (!name) { showError('名前を入力してください'); return false; }
+  apiKey = key;
+  myName = name;
+  localStorage.setItem('chat_api_key', key);
+  localStorage.setItem('chat_name', name);
+  return true;
+}
+
+function showError(msg) {
+  setupError.textContent = msg;
+  setTimeout(() => setupError.textContent = '', 3000);
+}
+
+// ===== PeerJS初期化 =====
+function initPeer(targetId) {
+  setupScreen.style.display = 'none';
+  chatScreen.style.display = 'flex';
+
+  peer = new Peer();
+
+  peer.on('open', (id) => {
+    if (isHost) {
+      // ホスト：自分のIDを使って招待URLを生成
+      const inviteUrl = `${location.origin}${location.pathname}?room=${id}`;
+      shareBar.style.display = 'flex';
+      shareUrl.textContent = inviteUrl;
+
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(inviteUrl).then(() => {
+          copyBtn.textContent = 'コピー済み！';
+          setTimeout(() => copyBtn.textContent = 'コピー', 2000);
+        });
+      });
+
+      setStatus('接続待ち... 招待URLを相手に送ってください', false);
+    } else {
+      // ゲスト：ホストに接続
+      setStatus('接続中...', false);
+      const c = peer.connect(targetId, { reliable: true, metadata: { name: myName } });
+      setupConnection(c);
+    }
+  });
+
+  peer.on('connection', (c) => {
+    // ホストが接続を受け取る
+    setupConnection(c);
+  });
+
+  peer.on('error', (err) => {
+    console.error(err);
+    setStatus('エラー: ' + err.type, false);
+  });
+}
+
+// ===== 接続セットアップ =====
+function setupConnection(c) {
+  conn = c;
+
+  conn.on('open', () => {
+    setStatus('接続しました', true);
+    shareBar.style.display = 'none';
+    // 自分の名前を送信
+    conn.send({ type: 'hello', name: myName });
+  });
+
+  conn.on('data', (data) => {
+    if (data.type === 'hello') {
+      setStatus(`${data.name} と接続中`, true);
+    } else if (data.type === 'typing') {
+      showRemoteTyping(data.text);
+    } else if (data.type === 'message') {
+      addMessage(data.name, data.text, data.translation, false);
+      hideRemoteTyping();
+    }
+  });
+
+  conn.on('close', () => {
+    setStatus('切断されました', false);
+  });
+
+  conn.on('error', (err) => {
+    console.error(err);
+  });
+}
+
+// ===== ステータス更新 =====
+function setStatus(text, connected) {
+  statusText.textContent = text;
+  statusDot.className = connected ? 'connected' : '';
+}
+
+// ===== リモートのタイピング表示 =====
+function showRemoteTyping(text) {
+  if (text) {
+    remoteTypingPreview.style.display = 'block';
+    remoteTypingPreview.textContent = text;
+  } else {
+    hideRemoteTyping();
+  }
+}
+
+function hideRemoteTyping() {
+  remoteTypingPreview.style.display = 'none';
+  remoteTypingPreview.textContent = '';
+}
+
+// ===== 入力イベント =====
+messageInput.addEventListener('input', () => {
+  // テキストエリアの高さ自動調整
+  messageInput.style.height = 'auto';
+  messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+
+  // タイピング状態を送信
+  if (conn && conn.open) {
+    conn.send({ type: 'typing', text: messageInput.value });
+  }
+});
+
+messageInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+sendBtn.addEventListener('click', sendMessage);
+
+// ===== メッセージ送信 =====
+async function sendMessage() {
+  const text = messageInput.value.trim();
+  if (!text || !conn || !conn.open) return;
+
+  messageInput.value = '';
+  messageInput.style.height = 'auto';
+
+  // タイピング状態をクリア
+  if (conn.open) conn.send({ type: 'typing', text: '' });
+
+  // 翻訳
+  const translation = await translate(text);
+
+  // 自分の画面に表示
+  addMessage(myName, text, translation, true);
+
+  // 相手に送信
+  conn.send({ type: 'message', name: myName, text, translation });
+}
+
+// ===== Claude API翻訳 =====
+async function translate(text) {
+  try {
+    const isJapanese = /[\u3000-\u9fff\uff00-\uffef]/.test(text);
+    const prompt = isJapanese
+      ? `以下の日本語を自然な英語に翻訳してください。翻訳文のみ返してください：\n${text}`
+      : `以下の英語を自然な日本語に翻訳してください。翻訳文のみ返してください：\n${text}`;
+
+    const res = await fetch(CLAUDE_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    return data.content[0].text.trim();
+  } catch (err) {
+    console.error('翻訳エラー:', err);
+    return '(翻訳失敗)';
+  }
+}
+
+// ===== メッセージ表示 =====
+function addMessage(name, text, translation, isSelf) {
+  const group = document.createElement('div');
+  group.className = `message-group ${isSelf ? 'self' : 'other'}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+
+  const trans = document.createElement('div');
+  trans.className = 'translation';
+  trans.textContent = translation;
+
+  group.appendChild(bubble);
+  group.appendChild(trans);
+  messages.appendChild(group);
+
+  // 最下部にスクロール
+  messages.scrollTop = messages.scrollHeight;
+}
+</script>
+</body>
+</html>
