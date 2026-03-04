@@ -320,7 +320,7 @@
   <h1>🌐 リアルタイム翻訳チャット</h1>
   <p>日本語 ↔ 英語をリアルタイムで翻訳しながらチャットできます</p>
 
-  <div class="input-group">
+  <div class="input-group" id="api-key-group">
     <label>Claude APIキー</label>
     <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off">
   </div>
@@ -409,34 +409,34 @@ apiKeyInput.value = localStorage.getItem('chat_api_key') || '';
 nameInput.value = localStorage.getItem('chat_name') || '';
 
 if (hostPeerId) {
-  // 招待URLから来た場合は参加ボタンをハイライト
+  // ゲスト：APIキー不要、名前だけ入力すればOK
+  document.getElementById('api-key-group').style.display = 'none';
   joinBtn.textContent = '参加する';
   joinBtn.style.background = '#4f46e5';
   joinBtn.style.color = 'white';
   startBtn.style.display = 'none';
-  document.querySelector('#setup-screen p').textContent = '招待URLを受け取りました。名前とAPIキーを入力して参加してください。';
+  document.querySelector('#setup-screen p').textContent = '招待を受け取りました。名前を入力して参加してください。';
 }
 
 // ===== セットアップ =====
 startBtn.addEventListener('click', () => {
-  if (!validate()) return;
+  if (!validateHost()) return;
   isHost = true;
   initPeer(null);
 });
 
 joinBtn.addEventListener('click', () => {
-  if (!validate()) return;
+  if (!validateGuest()) return;
   isHost = false;
   if (hostPeerId) {
     initPeer(hostPeerId);
   } else {
-    // URLなしで参加ボタンを押した場合
     const roomId = prompt('招待URLのroom=以降のIDを入力してください：');
     if (roomId) initPeer(roomId);
   }
 });
 
-function validate() {
+function validateHost() {
   const key = apiKeyInput.value.trim();
   const name = nameInput.value.trim();
   if (!key) { showError('APIキーを入力してください'); return false; }
@@ -444,6 +444,14 @@ function validate() {
   apiKey = key;
   myName = name;
   localStorage.setItem('chat_api_key', key);
+  localStorage.setItem('chat_name', name);
+  return true;
+}
+
+function validateGuest() {
+  const name = nameInput.value.trim();
+  if (!name) { showError('名前を入力してください'); return false; }
+  myName = name;
   localStorage.setItem('chat_name', name);
   return true;
 }
@@ -505,13 +513,28 @@ function setupConnection(c) {
     conn.send({ type: 'hello', name: myName });
   });
 
-  conn.on('data', (data) => {
+  conn.on('data', async (data) => {
     if (data.type === 'hello') {
       setStatus(`${data.name} と接続中`, true);
     } else if (data.type === 'typing') {
       showRemoteTyping(data.text);
     } else if (data.type === 'message') {
+      // 翻訳済みメッセージを表示（ホストから届く）
       addMessage(data.name, data.text, data.translation, false);
+      hideRemoteTyping();
+    } else if (data.type === 'translate_request') {
+      // ホストのみ：ゲストの翻訳依頼を処理
+      if (isHost) {
+        const translation = await translate(data.text);
+        // ゲストに翻訳結果を返す
+        conn.send({ type: 'translate_response', name: data.name, text: data.text, translation });
+        // ホストの画面にも表示
+        addMessage(data.name, data.text, translation, false);
+        hideRemoteTyping();
+      }
+    } else if (data.type === 'translate_response') {
+      // ゲストのみ：ホストから翻訳結果を受け取る
+      addMessage(data.name, data.text, data.translation, true);
       hideRemoteTyping();
     }
   });
@@ -576,16 +599,17 @@ async function sendMessage() {
   messageInput.style.height = 'auto';
 
   // タイピング状態をクリア
-  if (conn.open) conn.send({ type: 'typing', text: '' });
+  conn.send({ type: 'typing', text: '' });
 
-  // 翻訳
-  const translation = await translate(text);
-
-  // 自分の画面に表示
-  addMessage(myName, text, translation, true);
-
-  // 相手に送信
-  conn.send({ type: 'message', name: myName, text, translation });
+  if (isHost) {
+    // ホスト：自分で翻訳して両方に配信
+    const translation = await translate(text);
+    addMessage(myName, text, translation, true);
+    conn.send({ type: 'message', name: myName, text, translation });
+  } else {
+    // ゲスト：ホストに翻訳依頼を送る（翻訳結果はtranslate_responseで返ってくる）
+    conn.send({ type: 'translate_request', name: myName, text });
+  }
 }
 
 // ===== Claude API翻訳 =====
