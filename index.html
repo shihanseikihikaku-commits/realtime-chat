@@ -667,6 +667,7 @@ function setupConnection(c) {
 
   conn.on('open', () => {
     document.getElementById('share-bar').style.display = 'none';
+    requestNotificationPermission();
     // 自分の名前と履歴を送る
     const myHistory = currentContact ? getHistory(currentContact) : [];
     conn.send({ type: 'hello', name: myName, history: myHistory });
@@ -713,6 +714,7 @@ function setupConnection(c) {
     } else if (data.type === 'message') {
       addMessage(data.name, data.text, data.translation, false);
       hideRemoteTyping();
+      sendNotification(data.name, data.text);
       // 受信したら即座に既読を送る
       if (conn && conn.open) conn.send({ type: 'read' });
       const msg = { from: data.name, text: data.text, translation: data.translation, timestamp: new Date().toISOString() };
@@ -724,6 +726,7 @@ function setupConnection(c) {
         conn.send({ type: 'translate_response', name: data.name, text: data.text, translation });
         addMessage(data.name, data.text, translation, false);
         hideRemoteTyping();
+        sendNotification(data.name, data.text);
         const msg = { from: data.name, text: data.text, translation, timestamp: new Date().toISOString() };
         saveMessage(currentContact, msg);
         // 受信したら既読を送る
@@ -822,6 +825,31 @@ async function sendMessage() {
   } else {
     conn.send({ type: 'translate_request', name: myName, text });
   }
+}
+
+// ===== 通知 =====
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function sendNotification(name, text) {
+  // タブがアクティブなら通知しない
+  if (document.visibilityState === 'visible') return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const n = new Notification(`${name} からメッセージ`, {
+    body: text,
+    icon: 'https://cdn.jsdelivr.net/npm/twemoji@14/assets/72x72/1f310.png',
+    tag: 'chat-message',
+    renotify: true,
+  });
+
+  n.onclick = () => {
+    window.focus();
+    n.close();
+  };
 }
 
 // ===== Claude API翻訳 =====
