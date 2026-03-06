@@ -735,6 +735,8 @@ function setupConnection(c) {
       hideRemoteTyping();
       const msg = { from: myName, text: data.text, translation: data.translation, timestamp: new Date().toISOString() };
       saveMessage(currentContact, msg);
+      // translate_response が届いた = ホストが受け取って処理した証拠 → 既読表示
+      markLastMessageRead();
     }
   });
 
