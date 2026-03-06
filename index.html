@@ -566,7 +566,7 @@ function showSetup() {
 
 document.getElementById('back-btn').addEventListener('click', renderHome);
 
-document.getElementById('start-btn').addEventListener('click', () => {
+document.getElementById('start-btn').addEventListener('click', async () => {
   const key = document.getElementById('api-key-input').value.trim();
   const name = document.getElementById('name-input').value.trim();
   const err = document.getElementById('setup-error');
@@ -582,6 +582,8 @@ document.getElementById('start-btn').addEventListener('click', () => {
   data.myName = name;
   saveData(data);
 
+  // ユーザー操作の直後に許可を求める
+  await requestNotificationPermission();
   startHostSession();
 });
 
@@ -600,7 +602,7 @@ if (hostPeerId) {
   const data = loadData();
   document.getElementById('name-input').value = data.myName || '';
 
-  document.getElementById('start-btn').onclick = () => {
+  document.getElementById('start-btn').onclick = async () => {
     const name = document.getElementById('name-input').value.trim();
     const err = document.getElementById('setup-error');
     if (!name) { err.textContent = '名前を入力してください'; return; }
@@ -611,6 +613,8 @@ if (hostPeerId) {
     d.myName = name;
     saveData(d);
 
+    // ユーザー操作の直後に許可を求める
+    await requestNotificationPermission();
     isHost = false;
     initPeer(hostPeerId);
   };
@@ -667,7 +671,6 @@ function setupConnection(c) {
 
   conn.on('open', () => {
     document.getElementById('share-bar').style.display = 'none';
-    requestNotificationPermission();
     // 自分の名前と履歴を送る
     const myHistory = currentContact ? getHistory(currentContact) : [];
     conn.send({ type: 'hello', name: myName, history: myHistory });
@@ -828,16 +831,17 @@ async function sendMessage() {
 }
 
 // ===== 通知 =====
-function requestNotificationPermission() {
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
   }
 }
 
 function sendNotification(name, text) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
   // タブがアクティブなら通知しない
   if (document.visibilityState === 'visible') return;
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
   const n = new Notification(`${name} からメッセージ`, {
     body: text,
@@ -846,10 +850,7 @@ function sendNotification(name, text) {
     renotify: true,
   });
 
-  n.onclick = () => {
-    window.focus();
-    n.close();
-  };
+  n.onclick = () => { window.focus(); n.close(); };
 }
 
 // ===== Claude API翻訳 =====
@@ -885,11 +886,18 @@ async function translate(text) {
 }
 
 // ===== メッセージ表示 =====
-function addMessage(name, text, translation, isSelf) {
+let lastSelfMessageId = null;
+
+function addMessage(name, text, translation, isSelf, msgId = null) {
   const container = document.getElementById('messages');
   const group = document.createElement('div');
+  const id = msgId || `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   group.className = `message-group ${isSelf ? 'self' : 'other'}`;
-  if (isSelf) group.dataset.self = 'true';
+  group.dataset.msgId = id;
+  if (isSelf) {
+    group.dataset.self = 'true';
+    lastSelfMessageId = id;
+  }
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
@@ -902,34 +910,28 @@ function addMessage(name, text, translation, isSelf) {
   group.appendChild(bubble);
   if (translation) group.appendChild(trans);
 
-  // 自分のメッセージには既読エリアを追加
   if (isSelf) {
     const receipt = document.createElement('div');
     receipt.className = 'read-receipt';
-    receipt.textContent = '';
     group.appendChild(receipt);
   }
 
   container.appendChild(group);
   container.scrollTop = container.scrollHeight;
+  return id;
 }
 
 // ===== 既読マーク =====
 function markLastMessageRead() {
+  if (!lastSelfMessageId) return;
   const container = document.getElementById('messages');
-  // 自分のメッセージのうち最新のものに既読をつける
-  const selfMessages = container.querySelectorAll('.message-group[data-self="true"]');
-  if (selfMessages.length === 0) return;
 
-  // 全ての既読をリセットしてから最新のみに表示
-  selfMessages.forEach(m => {
-    const r = m.querySelector('.read-receipt');
-    if (r) r.textContent = '';
-  });
+  // 全ての既読をリセット
+  container.querySelectorAll('.read-receipt').forEach(r => r.textContent = '');
 
-  const last = selfMessages[selfMessages.length - 1];
-  const receipt = last.querySelector('.read-receipt');
-  if (receipt) receipt.textContent = '既読 ✓';
+  // 最新の自分のメッセージに既読表示
+  const target = container.querySelector(`[data-msg-id="${lastSelfMessageId}"] .read-receipt`);
+  if (target) target.textContent = '既読 ✓';
 }
 
 // ===== 退出処理 =====
