@@ -14,58 +14,16 @@
       height: 100dvh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
-    /* ===== セットアップ画面 ===== */
-    #setup-screen {
-      display: flex;
+    /* ===== 共通 ===== */
+    .screen {
+      display: none;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
       height: 100dvh;
-      padding: 24px;
-      gap: 16px;
     }
-
-    #setup-screen h1 {
-      font-size: 1.4rem;
-      color: #1a1a2e;
-      text-align: center;
-    }
-
-    #setup-screen p {
-      color: #666;
-      font-size: 0.9rem;
-      text-align: center;
-      max-width: 320px;
-    }
-
-    .input-group {
-      width: 100%;
-      max-width: 360px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .input-group label {
-      font-size: 0.85rem;
-      color: #444;
-      font-weight: 600;
-    }
-
-    .input-group input {
-      padding: 12px 14px;
-      border: 1.5px solid #ddd;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .input-group input:focus {
-      border-color: #4f46e5;
-    }
+    .screen.active { display: flex; }
 
     .btn {
       width: 100%;
@@ -78,68 +36,192 @@
       cursor: pointer;
       transition: opacity 0.2s;
     }
+    .btn:active { opacity: 0.75; }
+    .btn-primary { background: #4f46e5; color: white; }
+    .btn-secondary { background: white; color: #4f46e5; border: 1.5px solid #4f46e5; }
+    .btn-danger { background: #ef4444; color: white; }
 
-    .btn:active { opacity: 0.8; }
-
-    .btn-primary {
-      background: #4f46e5;
-      color: white;
-    }
-
-    .btn-secondary {
-      background: white;
-      color: #4f46e5;
-      border: 1.5px solid #4f46e5;
-    }
-
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .input-group {
       width: 100%;
       max-width: 360px;
-      color: #aaa;
-      font-size: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .input-group label { font-size: 0.85rem; color: #444; font-weight: 600; }
+    .input-group input {
+      padding: 12px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-group input:focus { border-color: #4f46e5; }
+
+    .error-msg { color: #ef4444; font-size: 0.82rem; text-align: center; }
+
+    /* ===== ホーム画面 ===== */
+    #home-screen {
+      background: #f0f2f5;
     }
 
-    .divider::before, .divider::after {
-      content: '';
+    #home-header {
+      background: #4f46e5;
+      color: white;
+      padding: 16px 20px;
+      flex-shrink: 0;
+    }
+    #home-header h1 { font-size: 1.1rem; font-weight: 700; }
+    #home-header p { font-size: 0.8rem; opacity: 0.8; margin-top: 2px; }
+
+    #contacts-list {
       flex: 1;
-      height: 1px;
-      background: #ddd;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .contact-card {
+      background: white;
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .contact-card:active { transform: scale(0.98); }
+
+    .contact-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #eef2ff;
+      color: #4f46e5;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-weight: 700;
+    }
+
+    .contact-info { flex: 1; min-width: 0; }
+    .contact-name { font-weight: 600; color: #1a1a2e; font-size: 0.95rem; }
+    .contact-last { font-size: 0.78rem; color: #aaa; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .contact-arrow { color: #ccc; font-size: 1.1rem; }
+
+    .contact-card .delete-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #fee2e2;
+      color: #ef4444;
+      border: none;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #aaa;
+      padding: 40px 20px;
+      font-size: 0.9rem;
+      line-height: 1.8;
+    }
+
+    #home-footer {
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      flex-shrink: 0;
+      background: #f0f2f5;
+    }
+
+    /* ===== セットアップ画面 ===== */
+    #setup-screen {
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      gap: 16px;
+      background: #f0f2f5;
+    }
+    #setup-screen h2 { font-size: 1.3rem; color: #1a1a2e; text-align: center; }
+    #setup-screen p { color: #666; font-size: 0.88rem; text-align: center; max-width: 320px; }
+
+    #back-btn {
+      align-self: flex-start;
+      background: none;
+      border: none;
+      color: #4f46e5;
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 4px 0;
+      font-weight: 600;
     }
 
     /* ===== チャット画面 ===== */
-    #chat-screen {
-      display: none;
-      flex-direction: column;
-      height: 100dvh;
-    }
-
     #chat-header {
       background: #4f46e5;
       color: white;
       padding: 12px 16px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 10px;
       flex-shrink: 0;
     }
-
-    #chat-header .title {
-      font-weight: 700;
-      font-size: 1rem;
+    #chat-back-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0 4px;
     }
-
+    #chat-header .title { flex: 1; font-weight: 700; font-size: 1rem; }
     #status-dot {
-      width: 10px;
-      height: 10px;
+      width: 10px; height: 10px;
       border-radius: 50%;
       background: #f87171;
       transition: background 0.3s;
+      flex-shrink: 0;
     }
-
     #status-dot.connected { background: #4ade80; }
+    #status-text { font-size: 0.78rem; opacity: 0.9; }
+
+    #share-bar {
+      background: #eef2ff;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      font-size: 0.82rem;
+      color: #4f46e5;
+      border-bottom: 1px solid #ddd;
+    }
+    #share-url {
+      flex: 1; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+      font-size: 0.78rem; color: #666;
+    }
+    #copy-btn {
+      padding: 4px 10px;
+      background: #4f46e5; color: white;
+      border: none; border-radius: 6px;
+      font-size: 0.78rem; cursor: pointer;
+      white-space: nowrap; flex-shrink: 0;
+    }
 
     #messages {
       flex: 1;
@@ -150,22 +232,21 @@
       gap: 12px;
     }
 
+    .date-divider {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #bbb;
+      margin: 4px 0;
+    }
+
     .message-group {
       display: flex;
       flex-direction: column;
       gap: 2px;
       max-width: 80%;
     }
-
-    .message-group.self {
-      align-self: flex-end;
-      align-items: flex-end;
-    }
-
-    .message-group.other {
-      align-self: flex-start;
-      align-items: flex-start;
-    }
+    .message-group.self { align-self: flex-end; align-items: flex-end; }
+    .message-group.other { align-self: flex-start; align-items: flex-start; }
 
     .bubble {
       padding: 10px 14px;
@@ -174,16 +255,12 @@
       line-height: 1.4;
       word-break: break-word;
     }
-
     .message-group.self .bubble {
-      background: #4f46e5;
-      color: white;
+      background: #4f46e5; color: white;
       border-bottom-right-radius: 4px;
     }
-
     .message-group.other .bubble {
-      background: white;
-      color: #1a1a2e;
+      background: white; color: #1a1a2e;
       border-bottom-left-radius: 4px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
@@ -193,26 +270,19 @@
       padding: 4px 10px;
       border-radius: 10px;
     }
-
     .message-group.self .translation {
       color: rgba(255,255,255,0.75);
       background: rgba(79,70,229,0.3);
     }
-
     .message-group.other .translation {
-      color: #888;
-      background: #f5f5f5;
+      color: #888; background: #f5f5f5;
     }
 
-    /* タイピング中インジケーター */
     #typing-indicator {
       padding: 0 16px 8px;
-      font-size: 0.82rem;
-      color: #aaa;
       min-height: 24px;
       flex-shrink: 0;
     }
-
     #remote-typing-preview {
       background: white;
       border-radius: 18px;
@@ -226,7 +296,6 @@
       display: none;
     }
 
-    /* 入力エリア */
     #input-area {
       background: white;
       border-top: 1px solid #eee;
@@ -236,7 +305,6 @@
       align-items: flex-end;
       flex-shrink: 0;
     }
-
     #message-input {
       flex: 1;
       padding: 10px 14px;
@@ -250,75 +318,40 @@
       transition: border-color 0.2s;
       font-family: inherit;
     }
-
     #message-input:focus { border-color: #4f46e5; }
 
     #send-btn {
-      width: 42px;
-      height: 42px;
+      width: 42px; height: 42px;
       border-radius: 50%;
       background: #4f46e5;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
       transition: opacity 0.2s;
     }
-
     #send-btn:active { opacity: 0.8; }
-
     #send-btn svg { width: 18px; height: 18px; fill: white; }
-
-    /* シェアURL */
-    #share-bar {
-      background: #eef2ff;
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-      font-size: 0.82rem;
-      color: #4f46e5;
-      border-bottom: 1px solid #ddd;
-    }
-
-    #share-url {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 0.78rem;
-      color: #666;
-    }
-
-    #copy-btn {
-      padding: 4px 10px;
-      background: #4f46e5;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.78rem;
-      cursor: pointer;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    /* エラー表示 */
-    .error-msg {
-      color: #ef4444;
-      font-size: 0.82rem;
-      text-align: center;
-    }
   </style>
 </head>
 <body>
 
+<!-- ===== ホーム画面 ===== -->
+<div id="home-screen" class="screen">
+  <div id="home-header">
+    <h1>🌐 翻訳チャット</h1>
+    <p>日本語 ↔ 英語リアルタイム翻訳</p>
+  </div>
+  <div id="contacts-list"></div>
+  <div id="home-footer">
+    <button class="btn btn-primary" id="new-chat-btn">＋ 新しい相手を招待する</button>
+  </div>
+</div>
+
 <!-- ===== セットアップ画面 ===== -->
-<div id="setup-screen">
-  <h1>🌐 リアルタイム翻訳チャット</h1>
-  <p>日本語 ↔ 英語をリアルタイムで翻訳しながらチャットできます</p>
+<div id="setup-screen" class="screen">
+  <button id="back-btn">← 戻る</button>
+  <h2 id="setup-title">新しい相手を招待</h2>
+  <p id="setup-desc">APIキーと名前を入力してルームを作成してください</p>
 
   <div class="input-group" id="api-key-group">
     <label>Claude APIキー</label>
@@ -330,23 +363,17 @@
     <input type="text" id="name-input" placeholder="例：田中" maxlength="20">
   </div>
 
-  <button class="btn btn-primary" id="start-btn">ルームを作成して招待する</button>
-
-  <div class="divider">または</div>
-
-  <button class="btn btn-secondary" id="join-btn">招待URLで参加する</button>
-
+  <button class="btn btn-primary" id="start-btn">ルームを作成する</button>
   <p id="setup-error" class="error-msg"></p>
 </div>
 
 <!-- ===== チャット画面 ===== -->
-<div id="chat-screen">
+<div id="chat-screen" class="screen">
   <div id="chat-header">
-    <span class="title">🌐 翻訳チャット</span>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span id="status-text" style="font-size:0.8rem;opacity:0.9">接続待ち...</span>
-      <div id="status-dot"></div>
-    </div>
+    <button id="chat-back-btn">←</button>
+    <span class="title" id="chat-title">翻訳チャット</span>
+    <span id="status-text">接続待ち...</span>
+    <div id="status-dot"></div>
   </div>
 
   <div id="share-bar" style="display:none">
@@ -370,9 +397,10 @@
 </div>
 
 <script>
-// ===== 設定 =====
+// ===== 定数 =====
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+const MAX_CONTACTS = 5;
 
 // ===== 状態 =====
 let peer = null;
@@ -380,126 +408,237 @@ let conn = null;
 let myName = '';
 let apiKey = '';
 let isHost = false;
-let typingTimer = null;
+let currentContact = null; // 現在チャット中の相手名
 
-// ===== DOM =====
-const setupScreen = document.getElementById('setup-screen');
-const chatScreen = document.getElementById('chat-screen');
-const apiKeyInput = document.getElementById('api-key-input');
-const nameInput = document.getElementById('name-input');
-const startBtn = document.getElementById('start-btn');
-const joinBtn = document.getElementById('join-btn');
-const setupError = document.getElementById('setup-error');
-const messages = document.getElementById('messages');
-const messageInput = document.getElementById('message-input');
-const sendBtn = document.getElementById('send-btn');
-const statusDot = document.getElementById('status-dot');
-const statusText = document.getElementById('status-text');
-const shareBar = document.getElementById('share-bar');
-const shareUrl = document.getElementById('share-url');
-const copyBtn = document.getElementById('copy-btn');
-const remoteTypingPreview = document.getElementById('remote-typing-preview');
+// ===== localStorage ヘルパー =====
+function loadData() {
+  try {
+    return JSON.parse(localStorage.getItem('chat_data') || '{}');
+  } catch { return {}; }
+}
 
-// ===== 初期化：URLパラメータを確認 =====
+function saveData(data) {
+  localStorage.setItem('chat_data', JSON.stringify(data));
+}
+
+function getContacts() {
+  return loadData().contacts || [];
+}
+
+function getHistory(contactName) {
+  const contacts = getContacts();
+  const c = contacts.find(c => c.name === contactName);
+  return c ? c.history || [] : [];
+}
+
+function saveMessage(contactName, msg) {
+  const data = loadData();
+  if (!data.contacts) data.contacts = [];
+  let c = data.contacts.find(c => c.name === contactName);
+  if (!c) {
+    if (data.contacts.length >= MAX_CONTACTS) {
+      // 最も古い連絡先を削除
+      data.contacts.sort((a, b) => new Date(a.lastSeen) - new Date(b.lastSeen));
+      data.contacts.shift();
+    }
+    c = { name: contactName, lastSeen: new Date().toISOString(), history: [] };
+    data.contacts.push(c);
+  }
+  c.history.push(msg);
+  c.lastSeen = new Date().toISOString();
+  saveData(data);
+}
+
+function mergeHistory(localHistory, remoteHistory) {
+  const map = new Map();
+  [...localHistory, ...remoteHistory].forEach(m => {
+    const key = `${m.timestamp}_${m.from}_${m.text}`;
+    if (!map.has(key)) map.set(key, m);
+  });
+  return Array.from(map.values()).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+}
+
+function deleteContact(name) {
+  const data = loadData();
+  data.contacts = (data.contacts || []).filter(c => c.name !== name);
+  saveData(data);
+}
+
+// ===== 画面切り替え =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ===== ホーム画面 =====
+function renderHome() {
+  const data = loadData();
+  myName = data.myName || '';
+  apiKey = data.apiKey || '';
+
+  const contacts = getContacts();
+  const list = document.getElementById('contacts-list');
+  list.innerHTML = '';
+
+  if (contacts.length === 0) {
+    list.innerHTML = '<div class="empty-state">まだ会話相手がいません。<br>「新しい相手を招待する」から始めましょう。</div>';
+  } else {
+    const sorted = [...contacts].sort((a, b) => new Date(b.lastSeen) - new Date(a.lastSeen));
+    sorted.forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'contact-card';
+
+      const lastMsg = c.history && c.history.length > 0
+        ? c.history[c.history.length - 1].text
+        : '会話なし';
+      const lastDate = c.lastSeen
+        ? new Date(c.lastSeen).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
+        : '';
+
+      card.innerHTML = `
+        <div class="contact-avatar">${c.name.charAt(0).toUpperCase()}</div>
+        <div class="contact-info">
+          <div class="contact-name">${c.name}</div>
+          <div class="contact-last">${lastDate}　${lastMsg}</div>
+        </div>
+        <button class="delete-btn" data-name="${c.name}" title="削除">✕</button>
+        <span class="contact-arrow">›</span>
+      `;
+
+      card.querySelector('.delete-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm(`「${c.name}」との履歴を削除しますか？`)) {
+          deleteContact(c.name);
+          renderHome();
+        }
+      });
+
+      card.addEventListener('click', () => openExistingChat(c.name));
+      list.appendChild(card);
+    });
+  }
+
+  showScreen('home-screen');
+}
+
+// 既存の相手との再接続
+function openExistingChat(contactName) {
+  currentContact = contactName;
+  startHostSession();
+}
+
+document.getElementById('new-chat-btn').addEventListener('click', () => {
+  currentContact = null;
+  showSetup();
+});
+
+// ===== セットアップ画面 =====
+function showSetup() {
+  const data = loadData();
+  document.getElementById('api-key-input').value = data.apiKey || '';
+  document.getElementById('name-input').value = data.myName || '';
+  document.getElementById('setup-title').textContent = currentContact
+    ? `${currentContact} を招待する`
+    : '新しい相手を招待';
+  document.getElementById('setup-desc').textContent = 'APIキーと名前を確認してルームを作成してください';
+  showScreen('setup-screen');
+}
+
+document.getElementById('back-btn').addEventListener('click', renderHome);
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  const key = document.getElementById('api-key-input').value.trim();
+  const name = document.getElementById('name-input').value.trim();
+  const err = document.getElementById('setup-error');
+
+  if (!key) { err.textContent = 'APIキーを入力してください'; return; }
+  if (!name) { err.textContent = '名前を入力してください'; return; }
+  err.textContent = '';
+
+  apiKey = key;
+  myName = name;
+  const data = loadData();
+  data.apiKey = key;
+  data.myName = name;
+  saveData(data);
+
+  startHostSession();
+});
+
+// ===== ゲスト用セットアップ（URLパラメータあり） =====
 const urlParams = new URLSearchParams(window.location.search);
 const hostPeerId = urlParams.get('room');
 
-// 保存されたAPIキーと名前を復元
-apiKeyInput.value = localStorage.getItem('chat_api_key') || '';
-nameInput.value = localStorage.getItem('chat_name') || '';
-
 if (hostPeerId) {
-  // ゲスト：APIキー不要、名前だけ入力すればOK
+  // ゲスト画面：APIキー不要、名前のみ
   document.getElementById('api-key-group').style.display = 'none';
-  joinBtn.textContent = '参加する';
-  joinBtn.style.background = '#4f46e5';
-  joinBtn.style.color = 'white';
-  startBtn.style.display = 'none';
-  document.querySelector('#setup-screen p').textContent = '招待を受け取りました。名前を入力して参加してください。';
+  document.getElementById('setup-title').textContent = '招待を受け取りました';
+  document.getElementById('setup-desc').textContent = '名前を入力して参加してください';
+  document.getElementById('start-btn').textContent = '参加する';
+  document.getElementById('back-btn').style.display = 'none';
+
+  const data = loadData();
+  document.getElementById('name-input').value = data.myName || '';
+
+  document.getElementById('start-btn').onclick = () => {
+    const name = document.getElementById('name-input').value.trim();
+    const err = document.getElementById('setup-error');
+    if (!name) { err.textContent = '名前を入力してください'; return; }
+    err.textContent = '';
+
+    myName = name;
+    const d = loadData();
+    d.myName = name;
+    saveData(d);
+
+    isHost = false;
+    initPeer(hostPeerId);
+  };
+
+  showScreen('setup-screen');
+} else {
+  renderHome();
 }
 
-// ===== セットアップ =====
-startBtn.addEventListener('click', () => {
-  if (!validateHost()) return;
+// ===== ホストセッション開始 =====
+function startHostSession() {
   isHost = true;
   initPeer(null);
-});
-
-joinBtn.addEventListener('click', () => {
-  if (!validateGuest()) return;
-  isHost = false;
-  if (hostPeerId) {
-    initPeer(hostPeerId);
-  } else {
-    const roomId = prompt('招待URLのroom=以降のIDを入力してください：');
-    if (roomId) initPeer(roomId);
-  }
-});
-
-function validateHost() {
-  const key = apiKeyInput.value.trim();
-  const name = nameInput.value.trim();
-  if (!key) { showError('APIキーを入力してください'); return false; }
-  if (!name) { showError('名前を入力してください'); return false; }
-  apiKey = key;
-  myName = name;
-  localStorage.setItem('chat_api_key', key);
-  localStorage.setItem('chat_name', name);
-  return true;
-}
-
-function validateGuest() {
-  const name = nameInput.value.trim();
-  if (!name) { showError('名前を入力してください'); return false; }
-  myName = name;
-  localStorage.setItem('chat_name', name);
-  return true;
-}
-
-function showError(msg) {
-  setupError.textContent = msg;
-  setTimeout(() => setupError.textContent = '', 3000);
 }
 
 // ===== PeerJS初期化 =====
 function initPeer(targetId) {
-  setupScreen.style.display = 'none';
-  chatScreen.style.display = 'flex';
+  showScreen('chat-screen');
 
+  // 前の接続をクリア
+  if (peer) { try { peer.destroy(); } catch(e) {} }
   peer = new Peer();
 
   peer.on('open', (id) => {
     if (isHost) {
-      // ホスト：自分のIDを使って招待URLを生成
       const inviteUrl = `${location.origin}${location.pathname}?room=${id}`;
+      const shareBar = document.getElementById('share-bar');
       shareBar.style.display = 'flex';
-      shareUrl.textContent = inviteUrl;
+      document.getElementById('share-url').textContent = inviteUrl;
 
-      copyBtn.addEventListener('click', () => {
+      const copyBtn = document.getElementById('copy-btn');
+      copyBtn.onclick = () => {
         navigator.clipboard.writeText(inviteUrl).then(() => {
           copyBtn.textContent = 'コピー済み！';
           setTimeout(() => copyBtn.textContent = 'コピー', 2000);
         });
-      });
+      };
 
-      setStatus('接続待ち... 招待URLを相手に送ってください', false);
+      setStatus('招待URLを相手に送ってください', false);
     } else {
-      // ゲスト：ホストに接続
       setStatus('接続中...', false);
-      const c = peer.connect(targetId, { reliable: true, metadata: { name: myName } });
+      const c = peer.connect(targetId, { reliable: true });
       setupConnection(c);
     }
   });
 
-  peer.on('connection', (c) => {
-    // ホストが接続を受け取る
-    setupConnection(c);
-  });
-
-  peer.on('error', (err) => {
-    console.error(err);
-    setStatus('エラー: ' + err.type, false);
-  });
+  peer.on('connection', (c) => setupConnection(c));
+  peer.on('error', (err) => setStatus('エラー: ' + err.type, false));
 }
 
 // ===== 接続セットアップ =====
@@ -507,88 +646,133 @@ function setupConnection(c) {
   conn = c;
 
   conn.on('open', () => {
-    setStatus('接続しました', true);
-    shareBar.style.display = 'none';
-    // 自分の名前を送信
-    conn.send({ type: 'hello', name: myName });
+    document.getElementById('share-bar').style.display = 'none';
+    // 自分の名前と履歴を送る
+    const myHistory = currentContact ? getHistory(currentContact) : [];
+    conn.send({ type: 'hello', name: myName, history: myHistory });
   });
 
   conn.on('data', async (data) => {
     if (data.type === 'hello') {
-      setStatus(`${data.name} と接続中`, true);
+      // 相手の名前と履歴を受け取る
+      const remoteName = data.name;
+      currentContact = remoteName;
+      document.getElementById('chat-title').textContent = remoteName;
+      setStatus(`${remoteName} と接続中`, true);
+
+      // 履歴をマージして表示
+      const localHistory = getHistory(remoteName);
+      const merged = mergeHistory(localHistory, data.history || []);
+
+      // マージした履歴を保存
+      const d = loadData();
+      if (!d.contacts) d.contacts = [];
+      let contact = d.contacts.find(c => c.name === remoteName);
+      if (!contact) {
+        if (d.contacts.length >= MAX_CONTACTS) {
+          d.contacts.sort((a, b) => new Date(a.lastSeen) - new Date(b.lastSeen));
+          d.contacts.shift();
+        }
+        contact = { name: remoteName, lastSeen: new Date().toISOString(), history: [] };
+        d.contacts.push(contact);
+      }
+      contact.history = merged;
+      contact.lastSeen = new Date().toISOString();
+      saveData(d);
+
+      // 画面に履歴を表示
+      renderHistory(merged);
+
     } else if (data.type === 'typing') {
       showRemoteTyping(data.text);
+
     } else if (data.type === 'message') {
-      // 翻訳済みメッセージを表示（ホストから届く）
       addMessage(data.name, data.text, data.translation, false);
       hideRemoteTyping();
+      const msg = { from: data.name, text: data.text, translation: data.translation, timestamp: new Date().toISOString() };
+      saveMessage(currentContact, msg);
+
     } else if (data.type === 'translate_request') {
-      // ホストのみ：ゲストの翻訳依頼を処理
       if (isHost) {
         const translation = await translate(data.text);
-        // ゲストに翻訳結果を返す
         conn.send({ type: 'translate_response', name: data.name, text: data.text, translation });
-        // ホストの画面にも表示
         addMessage(data.name, data.text, translation, false);
         hideRemoteTyping();
+        const msg = { from: data.name, text: data.text, translation, timestamp: new Date().toISOString() };
+        saveMessage(currentContact, msg);
       }
+
     } else if (data.type === 'translate_response') {
-      // ゲストのみ：ホストから翻訳結果を受け取る
-      addMessage(data.name, data.text, data.translation, true);
+      addMessage(myName, data.text, data.translation, true);
       hideRemoteTyping();
+      const msg = { from: myName, text: data.text, translation: data.translation, timestamp: new Date().toISOString() };
+      saveMessage(currentContact, msg);
     }
   });
 
-  conn.on('close', () => {
-    setStatus('切断されました', false);
+  conn.on('close', () => setStatus('切断されました', false));
+  conn.on('error', (err) => console.error(err));
+}
+
+// ===== 履歴を画面に描画 =====
+function renderHistory(history) {
+  const container = document.getElementById('messages');
+  container.innerHTML = '';
+  if (!history || history.length === 0) return;
+
+  let lastDate = '';
+  history.forEach(msg => {
+    const date = new Date(msg.timestamp).toLocaleDateString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric' });
+    if (date !== lastDate) {
+      const divider = document.createElement('div');
+      divider.className = 'date-divider';
+      divider.textContent = date;
+      container.appendChild(divider);
+      lastDate = date;
+    }
+    addMessage(msg.from, msg.text, msg.translation, msg.from === myName);
   });
 
-  conn.on('error', (err) => {
-    console.error(err);
-  });
+  container.scrollTop = container.scrollHeight;
 }
 
 // ===== ステータス更新 =====
 function setStatus(text, connected) {
-  statusText.textContent = text;
-  statusDot.className = connected ? 'connected' : '';
+  document.getElementById('status-text').textContent = text;
+  document.getElementById('status-dot').className = connected ? 'connected' : '';
 }
 
-// ===== リモートのタイピング表示 =====
+// ===== タイピングプレビュー =====
 function showRemoteTyping(text) {
-  if (text) {
-    remoteTypingPreview.style.display = 'block';
-    remoteTypingPreview.textContent = text;
-  } else {
-    hideRemoteTyping();
-  }
+  const el = document.getElementById('remote-typing-preview');
+  if (text) { el.style.display = 'block'; el.textContent = text; }
+  else hideRemoteTyping();
 }
 
 function hideRemoteTyping() {
-  remoteTypingPreview.style.display = 'none';
-  remoteTypingPreview.textContent = '';
+  const el = document.getElementById('remote-typing-preview');
+  el.style.display = 'none';
+  el.textContent = '';
 }
 
 // ===== 入力イベント =====
+const messageInput = document.getElementById('message-input');
+
 messageInput.addEventListener('input', () => {
-  // テキストエリアの高さ自動調整
   messageInput.style.height = 'auto';
   messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
-
-  // タイピング状態を送信
-  if (conn && conn.open) {
-    conn.send({ type: 'typing', text: messageInput.value });
-  }
+  if (conn && conn.open) conn.send({ type: 'typing', text: messageInput.value });
 });
 
 messageInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
+  // IME変換中のEnterは無視（日本語入力問題の修正）
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
     e.preventDefault();
     sendMessage();
   }
 });
 
-sendBtn.addEventListener('click', sendMessage);
+document.getElementById('send-btn').addEventListener('click', sendMessage);
 
 // ===== メッセージ送信 =====
 async function sendMessage() {
@@ -597,17 +781,15 @@ async function sendMessage() {
 
   messageInput.value = '';
   messageInput.style.height = 'auto';
-
-  // タイピング状態をクリア
-  conn.send({ type: 'typing', text: '' });
+  if (conn.open) conn.send({ type: 'typing', text: '' });
 
   if (isHost) {
-    // ホスト：自分で翻訳して両方に配信
     const translation = await translate(text);
     addMessage(myName, text, translation, true);
     conn.send({ type: 'message', name: myName, text, translation });
+    const msg = { from: myName, text, translation, timestamp: new Date().toISOString() };
+    saveMessage(currentContact, msg);
   } else {
-    // ゲスト：ホストに翻訳依頼を送る（翻訳結果はtranslate_responseで返ってくる）
     conn.send({ type: 'translate_request', name: myName, text });
   }
 }
@@ -615,7 +797,7 @@ async function sendMessage() {
 // ===== Claude API翻訳 =====
 async function translate(text) {
   try {
-    const isJapanese = /[\u3000-\u9fff\uff00-\uffef]/.test(text);
+    const isJapanese = /[\u3040-\u9fff\uff00-\uffef]/.test(text);
     const prompt = isJapanese
       ? `以下の日本語を自然な英語に翻訳してください。翻訳文のみ返してください：\n${text}`
       : `以下の英語を自然な日本語に翻訳してください。翻訳文のみ返してください：\n${text}`;
@@ -646,6 +828,7 @@ async function translate(text) {
 
 // ===== メッセージ表示 =====
 function addMessage(name, text, translation, isSelf) {
+  const container = document.getElementById('messages');
   const group = document.createElement('div');
   group.className = `message-group ${isSelf ? 'self' : 'other'}`;
 
@@ -655,15 +838,21 @@ function addMessage(name, text, translation, isSelf) {
 
   const trans = document.createElement('div');
   trans.className = 'translation';
-  trans.textContent = translation;
+  trans.textContent = translation || '';
 
   group.appendChild(bubble);
-  group.appendChild(trans);
-  messages.appendChild(group);
-
-  // 最下部にスクロール
-  messages.scrollTop = messages.scrollHeight;
+  if (translation) group.appendChild(trans);
+  container.appendChild(group);
+  container.scrollTop = container.scrollHeight;
 }
+
+// ===== チャット画面の戻るボタン =====
+document.getElementById('chat-back-btn').addEventListener('click', () => {
+  if (peer) { try { peer.destroy(); } catch(e) {} peer = null; }
+  conn = null;
+  currentContact = null;
+  renderHome();
+});
 </script>
 </body>
 </html>
