@@ -188,6 +188,19 @@
       cursor: pointer;
       padding: 0 4px;
     }
+
+    #leave-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    #leave-btn:active { opacity: 0.75; }
     #chat-header .title { flex: 1; font-weight: 700; font-size: 1rem; }
     #status-dot {
       width: 10px; height: 10px;
@@ -374,6 +387,7 @@
     <span class="title" id="chat-title">翻訳チャット</span>
     <span id="status-text">接続待ち...</span>
     <div id="status-dot"></div>
+    <button id="leave-btn">退出</button>
   </div>
 
   <div id="share-bar" style="display:none">
@@ -846,13 +860,16 @@ function addMessage(name, text, translation, isSelf) {
   container.scrollTop = container.scrollHeight;
 }
 
-// ===== チャット画面の戻るボタン =====
-document.getElementById('chat-back-btn').addEventListener('click', () => {
+// ===== 退出処理 =====
+function leaveChat() {
   if (peer) { try { peer.destroy(); } catch(e) {} peer = null; }
   conn = null;
   currentContact = null;
   renderHome();
-});
+}
+
+document.getElementById('chat-back-btn').addEventListener('click', leaveChat);
+document.getElementById('leave-btn').addEventListener('click', leaveChat);
 </script>
 </body>
 </html>
