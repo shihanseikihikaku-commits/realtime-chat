@@ -291,6 +291,12 @@
       color: #888; background: #f5f5f5;
     }
 
+    .read-receipt {
+      font-size: 0.72rem;
+      color: #a5b4fc;
+      padding: 0 4px;
+    }
+
     #typing-indicator {
       padding: 0 16px 8px;
       min-height: 24px;
@@ -700,9 +706,15 @@ function setupConnection(c) {
     } else if (data.type === 'typing') {
       showRemoteTyping(data.text);
 
+    } else if (data.type === 'read') {
+      // 相手が読んだ → 自分の最新メッセージに既読をつける
+      markLastMessageRead();
+
     } else if (data.type === 'message') {
       addMessage(data.name, data.text, data.translation, false);
       hideRemoteTyping();
+      // 受信したら即座に既読を送る
+      if (conn && conn.open) conn.send({ type: 'read' });
       const msg = { from: data.name, text: data.text, translation: data.translation, timestamp: new Date().toISOString() };
       saveMessage(currentContact, msg);
 
@@ -714,6 +726,8 @@ function setupConnection(c) {
         hideRemoteTyping();
         const msg = { from: data.name, text: data.text, translation, timestamp: new Date().toISOString() };
         saveMessage(currentContact, msg);
+        // 受信したら既読を送る
+        if (conn && conn.open) conn.send({ type: 'read' });
       }
 
     } else if (data.type === 'translate_response') {
@@ -845,6 +859,7 @@ function addMessage(name, text, translation, isSelf) {
   const container = document.getElementById('messages');
   const group = document.createElement('div');
   group.className = `message-group ${isSelf ? 'self' : 'other'}`;
+  if (isSelf) group.dataset.self = 'true';
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
@@ -856,8 +871,35 @@ function addMessage(name, text, translation, isSelf) {
 
   group.appendChild(bubble);
   if (translation) group.appendChild(trans);
+
+  // 自分のメッセージには既読エリアを追加
+  if (isSelf) {
+    const receipt = document.createElement('div');
+    receipt.className = 'read-receipt';
+    receipt.textContent = '';
+    group.appendChild(receipt);
+  }
+
   container.appendChild(group);
   container.scrollTop = container.scrollHeight;
+}
+
+// ===== 既読マーク =====
+function markLastMessageRead() {
+  const container = document.getElementById('messages');
+  // 自分のメッセージのうち最新のものに既読をつける
+  const selfMessages = container.querySelectorAll('.message-group[data-self="true"]');
+  if (selfMessages.length === 0) return;
+
+  // 全ての既読をリセットしてから最新のみに表示
+  selfMessages.forEach(m => {
+    const r = m.querySelector('.read-receipt');
+    if (r) r.textContent = '';
+  });
+
+  const last = selfMessages[selfMessages.length - 1];
+  const receipt = last.querySelector('.read-receipt');
+  if (receipt) receipt.textContent = '既読 ✓';
 }
 
 // ===== 退出処理 =====
